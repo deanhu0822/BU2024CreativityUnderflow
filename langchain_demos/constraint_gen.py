@@ -12,6 +12,8 @@ import dotenv
 dotenv.load_dotenv()
 
 API_KEY = os.getenv('API_KEY')
+OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'chatgpt-4o-latest')
+OPENAI_BASE_URL = os.getenv('OPENAI_BASE_URL')
 # Function to encode the image
 def encode_image(image_array):
     # Convert numpy array to PNG format
@@ -24,7 +26,11 @@ class LaTeXGenerator:
     def __init__(self, save_dir='./'):
        
         base_dir = os.path.dirname(__file__)
-        self.client = OpenAI(api_key=API_KEY)
+        client_kwargs = {"api_key": API_KEY}
+        if OPENAI_BASE_URL:
+            client_kwargs["base_url"] = OPENAI_BASE_URL
+        self.client = OpenAI(**client_kwargs)
+        self.model = OPENAI_MODEL
         self.base_dir = os.path.join(save_dir, 'vlm_query')
 
         with open(os.path.join(base_dir, 'prompt_template.txt'), 'r') as f:
@@ -77,7 +83,7 @@ class LaTeXGenerator:
         print(messages)
         
         # stream back the response
-        stream = self.client.chat.completions.create(model='chatgpt-4o-latest',
+        stream = self.client.chat.completions.create(model=self.model,
                                                         messages=messages,
                                                         temperature=0,
                                                         max_tokens=2048,

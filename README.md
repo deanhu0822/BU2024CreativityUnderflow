@@ -37,6 +37,56 @@ Here's what makes AuToTeX tick:
 - **LangChain + OpenAI API** for the AI magic
 - **MathTex** to compile our TeX
 
+## Project Pipeline
+
+1. **Input**: User uploads or draws handwritten notes in the web UI.
+2. **Save**: Django stores document state/image (`Document` model).
+3. **Inference**: `LaTeXGenerator` (`langchain_demos/constraint_gen.py`) sends the image and prompt template to a vision-capable LLM.
+4. **Post-process**: The app strips markdown fences and writes `static/output.tex`.
+5. **Compile**: `pdflatex` compiles TeX into `static/output.pdf`.
+6. **Return**: Backend returns both LaTeX content and PDF (base64) to the frontend.
+
+## Deploying AuToTeX
+
+### 1) Install dependencies
+
+```bash
+pip install django djangorestframework openai python-dotenv opencv-python
+```
+
+Install a TeX compiler (for example TeX Live) so `pdflatex` is available.
+
+### 2) Configure environment variables
+
+```bash
+export API_KEY="<your-openai-api-key>"
+export OPENAI_MODEL="chatgpt-4o-latest"
+# optional: OpenAI-compatible endpoint (self-hosted/custom serving)
+export OPENAI_BASE_URL="https://api.openai.com/v1"
+```
+
+### 3) Run migrations and start app
+
+```bash
+python manage.py migrate
+python manage.py runserver 0.0.0.0:8000
+```
+
+### 4) Production deployment basics
+
+- Set `DEBUG=False`
+- Restrict `ALLOWED_HOSTS`
+- Serve static/media files from your web server or object storage
+- Run with a production WSGI server (for example gunicorn + nginx)
+
+## Using customized, fine-tuned, or reinforcement-trained models
+
+- **Customized/fine-tuned OpenAI model**: set `OPENAI_MODEL` to your model ID (example: `ft:gpt-4o-mini:org:project:model-id`).
+- **Reinforcement-trained or self-hosted model**: expose an OpenAI-compatible endpoint and set both:
+  - `OPENAI_BASE_URL` to your endpoint
+  - `OPENAI_MODEL` to the served model name
+- No code changes are needed for switching models after this update; deployment-level env vars control model routing.
+
 ## Challenges we ran into
 **Syncing and Saving Uploaded Image Files:** We struggled with managing edit histories and ensuring new edits were correctly compiled.
 
